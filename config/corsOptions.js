@@ -1,6 +1,6 @@
 /* eslint-disable */
 const allowedOrigins = [ 
-    process.env.CLIENT_ORIGIN,
+    process.env.CLIENT_DEV_ORIGIN,
 ]
 
 const corsOptions = {

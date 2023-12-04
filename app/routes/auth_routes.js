@@ -20,34 +20,6 @@ const User = require("../models/user");
 const router = express.Router();
 const requireToken = passport.authenticate("bearer", { session: false });
 
-// @desc Refresh
-// @route GET /auth/refresh
-// @access Public - because access token has expired
-
-// router.get(
-// 	"/verifyaccess",
-// 	asyncHandler(async (req, res, next) => {
-
-// 		console.log("GOT REQUESTS")
-
-// 		const token = req.headers.authorization.split(' ')[1];
-// 		console.log(token)
-
-// 		jwt.verify(
-// 			token,
-// 			process.env.ACCESS_TOKEN_SECRET,
-// 			async (err, decoded) => {
-// 				// if jwt expired
-// 				if (err)
-// 					return res
-// 						.status(403)
-// 						.json({ message: "Token has expired" });
-// 			}
-// 		);
-
-// 		return res.status(200).json({ message: "Token is valid" });
-// 	})
-// );
 
 router.get(
 	"/refreshAccess",
@@ -108,7 +80,7 @@ router.get(
 				// save user
 				await user.save();
 
-				await delay(2000);
+				await delay(1000);
 
 				// response
 				res.status(200).json({ user: user.toObject() });

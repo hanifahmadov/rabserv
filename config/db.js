@@ -3,7 +3,7 @@
 
 
 // creating a base name for the mongodb
-const mongooseBaseName = 'SXBookmark'
+const mongooseBaseName = 'rabbit'
 
 // create the mongodb uri for development and test
 const database = {
