@@ -78,7 +78,7 @@ router.post(
 				},
 			},
 			process.env.ACCESS_TOKEN_SECRET,
-			{ expiresIn: "10s" }
+			{ expiresIn: "1s" }
 		);
 
 		//# generate refresh token
