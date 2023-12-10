@@ -27,7 +27,7 @@ class UserSocket {
         this.socket.on('message', message => {
             console.log(message)
 
-            this.server.server.emit('message', 'this is response :: ' +  message)
+            this.server.server.emit('message', `msg from ${this.user.email}:: ` +  message)
 
         })
 
