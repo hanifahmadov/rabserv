@@ -3,7 +3,7 @@ const Emitter = require("events");
 const UserSocket = require("./UserSocket");
 const Message = require("../app/models/message");
 const Room = require("../app/models/room");
-const { BadCredentialsError } = require("../lib/custom_errors");
+const { SocketUserIDError } = require("../lib/custom_errors");
 const passport = require("passport");
 const bearer = require("passport-http-bearer");
 const jwt = require("jsonwebtoken");
@@ -14,40 +14,72 @@ class IO {
 	constructor(server) {
 		this.events = new Emitter();
 		this.server = server;
-		this.rooms = [];
+		this.rooms = [{ name: "general", messages: [], owner: "default" }];
 		this.users = [];
-		this.justJoined = undefined;
+		this.newJoinedUser = undefined;
 
-		this.server.use(async (socket, next) => {
-			const { _id } = socket.handshake.query;
+		this.server
+			.use(async (socket, next) => {
+				try {
+					const { _id } = await socket.handshake.query;
 
-			if (!_id) {
-				next(new BadCredentialsError());
-				return;
-			} else {
-				// retrive user from datebase
-				const signedinUser = await User.findOne({ _id });
+					if (_id == "undefined" || _id == "null") {
+						console.log("fukiii user id is not provided");
+						next(new SocketUserIDError(_id));
+					} else {
+						const signedinUser = await User.findOne({ _id });
+						// if no user handle error
+						if (!signedinUser) next(new BadCredentialsError());
+						// else case create a user socket for that specific userid
+						else {
+							// crating a new user socket and sending server,
+							const newUser = new UserSocket(
+								socket,
+								this,
+								signedinUser
+							);
 
-				// if no user handle error
-				if (!signedinUser) next(new BadCredentialsError());
-				// else case create a user socket for that specific userid
-				else {
-					// crating a new user socket and sending server,
-					const newUser = new UserSocket(socket, this, signedinUser);
+							socket.user = newUser.user;
 
-					this.justJoined = newUser;
+							this.users.push(socket);
+							this.newJoinedUser = socket;
 
-					next();
+							next();
+						}
+					}
+				} catch (err) {
+					console.log("error");
+					console.log(err);
 				}
-			}
-		});
+			})
 
-		this.server.on("connection", () => {
+			// DONE
+			// the problecm is, when user signed out, it didnt get disconnect so
+			// we have to take server into signout route(app.get) and then for to disconnect
 
-			console.log("just joined ::", this.justJoined.user.email);
+			/**
+			 * 	signout disconnection happens only in client side
+			 * 	if (signout.api-axios) is successfull
+			 * 	just call socket.disconnect()
+			 */
 
-			this.server.emit('message', "just joined :: " + this.justJoined.user.email)
-		});
+			// handling the connections and disconnections right on the server
+			.on("connection", (socket) => {
+				console.log("new connection : " + socket.user.email);
+
+				this.server.emit(
+					"new_connection",
+					"just joined :: " + socket.user.email
+				);
+
+				socket.on("disconnect", () => {
+					console.log("new disconnection : " + socket.user.email);
+					this.server.emit(
+						"new_disconnection",
+						"just disconnected :: " + socket.user.email
+					);
+				});
+			});
 	}
 
 	static create(server) {

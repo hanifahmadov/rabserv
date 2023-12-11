@@ -21,7 +21,6 @@ const chalk = require("chalk");
 const bcryptSaltRounds = 10;
 const requireToken = passport.authenticate("bearer", { session: false });
 const router = express.Router();
-
 /* ASYNC AWAIT */
 
 // POST

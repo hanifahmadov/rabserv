@@ -4,7 +4,7 @@ const {
 	destroySocket,
 	deleteRoom,
 	checkRoomAccess,
-} = require("./SocketListeners");
+} = require("./Listeners");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = process.env;
 const User = require("../app/models/user");
@@ -16,7 +16,7 @@ class UserSocket {
 		this.events = new Emitter();
 		this.socket = socket;
 		this.server = server;
-		this.rooms = [];
+		this.joinedrooms = [];
 		this.user = user;
 
 		this.listerners();
@@ -24,22 +24,11 @@ class UserSocket {
 
 	listerners() {
 
-        this.socket.on('message', message => {
-            console.log(message)
+        // this.server.server.on('disconnection', message => {
+		// 	console.log("new_disconnection : " + this.user.email);
+        // })
 
-            this.server.server.emit('message', `msg from ${this.user.email}:: ` +  message)
-
-        })
-
-        this.socket.on('disconnect', message => {
-            console.log(message)
-
-            this.server.server.emit('message', 'user has been disconnected ' +  message)
-        })
-
-       
-
-
+		// this.server.server.emit('new_disconnection', this.user.email + ' disconnected')
 	}
 }
 
