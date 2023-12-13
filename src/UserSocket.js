@@ -1,34 +1,47 @@
 /* eslint-disable */
-const {
-	joinRoom,
-	destroySocket,
-	deleteRoom,
-	checkRoomAccess,
-} = require("./Listeners");
-const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = process.env;
-const User = require("../app/models/user");
-const Emitter = require("events");
-const { v4 } = require("uuid");
 
 class UserSocket {
-	constructor(socket, server, user) {
-		this.events = new Emitter();
-		this.socket = socket;
-		this.server = server;
+	constructor(server, socket, info ) {
+		this.info = info
 		this.joinedrooms = [];
-		this.user = user;
+		this.socket = socket
+		this.server = server
 
+		
+
+		
+		
 		this.listerners();
 	}
 
 	listerners() {
 
-        // this.server.server.on('disconnection', message => {
-		// 	console.log("new_disconnection : " + this.user.email);
-        // })
 
-		// this.server.server.emit('new_disconnection', this.user.email + ' disconnected')
+
+		// socket.on("send_message", async (msg) => {
+		// 	// verify token first then reply
+
+		// 	this.messages.push(msg);
+		// 	this.server.emit("new_message", this.messages);
+
+		// 	// try {
+		// 	// 	const { UserInfo } = jwt.verify(socket.user.accessToken, process.env.ACCESS_TOKEN_SECRET);
+
+		// 	// 	console.log(UserInfo)
+
+		// 	// 	if(UserInfo && UserInfo.id && UserInfo.email){
+		// 	// 		this.messages.push(msg);
+		// 	// 		this.server.emit("new_message", this.messages);
+		// 	// 	}
+		// 	// } catch(err){
+		// 	// 	console.log(err)
+		// 	// 	// next(new SocketExpireTokendError());
+		// 	// }
+		// });
+
+	
+
+      
 	}
 }
 

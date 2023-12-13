@@ -73,11 +73,11 @@ router.post(
 			{
 				UserInfo: {
 					id: user._id,
-					email: user.email,
+					email: user.email
 				},
 			},
 			process.env.ACCESS_TOKEN_SECRET,
-			{ expiresIn: "1s" }
+			{ expiresIn: "1d" }
 		);
 
 		//# generate refresh token

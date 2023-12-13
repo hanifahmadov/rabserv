@@ -3,7 +3,11 @@ const Emitter = require("events");
 const UserSocket = require("./UserSocket");
 const Message = require("../app/models/message");
 const Room = require("../app/models/room");
-const errors = require("../lib/custom_errors");
+const {
+	SocketMissingTokenError,
+	SocketExpireTokendError,
+	BadCredentialsError,
+} = require("../lib/custom_errors");
 const passport = require("passport");
 const bearer = require("passport-http-bearer");
 const jwt = require("jsonwebtoken");
@@ -14,56 +18,114 @@ class IO {
 	constructor(server) {
 		this.events = new Emitter();
 		this.server = server;
-		this.rooms = [{ name: "general", messages: [], owner: "default" }];
+		this.rooms = ["general", "jokes"];
 		this.users = [];
+		this.messages = [];
 		this.newJoinedUser = undefined;
 
-		this.server.use(async (socket, next) => {
-			const headers = socket.handshake.headers;
+		this.server
+			.use(async (socket, next) => {
+				// console.log(socket.handshake.headers)
+				const headers = socket.handshake.headers;
 
+				const authorization =
+					headers.authorization && headers.authorization;
 
-			const authorizationHeader =
-				headers.authorization && headers.authorization;
+				// console.log("authorization ", authorization);
 
-			console.log("authorizationHeader ", authorizationHeader);
+				if (
+					authorization == undefined ||
+					authorization == "undefined"
+				) {
+					console.log("token missing or not provided");
+					next(new SocketMissingTokenError(authorization));
+				} else {
+					const token = authorization.split(" ")[1];
 
-			if (
-				authorizationHeader == undefined ||
-				authorizationHeader == "undefined"
-			) {
+					// verify token
+					try {
+						// if jwt is valid
+						const { UserInfo } = jwt.verify(
+							token,
+							process.env.ACCESS_TOKEN_SECRET
+						);
 
-				console.log("token error")
-				next(new errors.SocketMissingTokenError(authorizationHeader))
-			}
-		});
+						let user = await User.findOne({
+							_id: UserInfo.id,
+						});
 
-		// DONE
-		// the problecm is, when user signed out, it didnt get disconnect so
-		// we have to take server into signout route(app.get) and then for to disconnect
+						// if user not found or error
+						if (!user) next(new BadCredentialsError());
 
-		/**
-		 * 	signout disconnection happens only in client side
-		 * 	if (signout.api-axios) is successfull
-		 * 	just call socket.disconnect()
-		 */
+						// else attach user to socket
+						socket.user = new UserSocket(this, socket, user);
 
-		// handling the connections and disconnections right on the server
-		// .on("connection", (socket) => {
-		// 	console.log("new connection : " + socket.user.email);
+						this.users.push(socket);
 
-		// 	this.server.emit(
-		// 		"new_connection",
-		// 		"just joined :: " + socket.user.emailq
-		// 	);
+						// continue
+						next();
+					} catch (err) {
+						// if jwt is expired
+						console.log(" TOKEN EXPIREDDDDD");
+						next(new SocketExpireTokendError());
+					}
+				}
+			})
 
-		// 	socket.on("disconnect", () => {
-		// 		console.log("new disconnection : " + socket.user.email);
-		// 		this.server.emit(
-		// 			"new_disconnection",
-		// 			"just disconnected :: " + socket.user.email
-		// 		);
-		// 	});
-		// });
+			// DONE
+			// the problecm is, when user signed out, it didnt get disconnect so
+			// we have to take server into signout route(app.get) and then for to disconnect
+
+			/**
+			 * 	signout disconnection happens only in client side
+			 * 	if (signout.api-axios) is successfull
+			 * 	just call socket.disconnect()
+			 */
+
+			// handling the connections and disconnections right on the server
+			.on("connection", (socket) => {
+				console.log("new connection : " + socket.user.info.email);
+
+				this.server.emit(
+					"new_connection",
+					"just joined :: " + socket.user.info.email
+				);
+
+				socket.on("disconnect", () => {
+					console.log(
+						"new disconnection : " + socket.user.info.email
+					);
+					this.server.emit(
+						"new_disconnection",
+						"just disconnected :: " + socket.user.info.email
+					);
+				});
+
+				socket.on("send_message", async (msg) => {
+					// verify token first then reply
+
+					console.log(msg);
+
+					try {
+						const { UserInfo } = jwt.verify(
+							socket.user.info.accessToken,
+							process.env.ACCESS_TOKEN_SECRET
+						);
+
+						if (UserInfo.id) {
+							let temp =
+								msg + " from :: " + socket.user.info.email;
+
+							console.log(temp);
+							this.messages.push(temp);
+							this.server.emit("new_message", this.messages);
+						}
+					} catch (err) {
+						console.log("token expired");
+						console.log(err);
+					}
+				});
+			});
 	}
 
 	static create(server) {
@@ -73,6 +135,7 @@ class IO {
 		return newServer;
 	}
 
+
 	sendResponse(res, user) {
 		console.log("server sending message: ", res);
 		this.server
@@ -80,23 +143,16 @@ class IO {
 			.emit(`response`, `from user ${user}:: ` + res);
 	}
 
-	findRoomByName(name) {
-		return this.rooms.find((room) => room.name === name);
-	}
-
 	findRoomById(roomId) {
 		return this.rooms.find((room) => room.id === roomId);
 	}
 
-	newRoom(roomName, roomId) {
-		const room = { name: roomName, id: roomId };
+	createNewRoom(roomName, roomId) {
+		const room = { id: roomId, name: roomName};
 		this.rooms.push(room);
 		return room;
 	}
 
-	logEmitter() {
-		console.log(this.events);
-	}
 }
 
 module.exports = IO;

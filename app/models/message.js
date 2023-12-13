@@ -3,11 +3,6 @@ const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema(
 	{
-		ownerUserName: {
-			type: String,
-			required: true,
-		},
-
 		owner: {
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "User",
@@ -19,15 +14,16 @@ const messageSchema = new mongoose.Schema(
 			ref: "Room",
 			required: true,
 		},
-        
+
 		text: {
 			type: String,
 			required: true,
 		},
-		sentAt: {
-			type: String,
-			required: true,
-		},
+
+		// createdAt: {
+		// 	type: Date,
+		// 	required: true,
+		// },
 	},
 	{
 		timestamps: true,

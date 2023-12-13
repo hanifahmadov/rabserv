@@ -78,11 +78,6 @@ app.use(authRoutes);
 app.use(userRoutes);
 
 
-
-
-
-
-
 const IOserver = IO.create(socketio)
 
 app.set('ioserver', IOserver)
