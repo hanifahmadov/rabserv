@@ -22,7 +22,6 @@ const requestLogger = require("./lib/request_logger");
 // routes
 const userRoutes = require("./app/routes/user_routes");
 const authRoutes = require("./app/routes/auth_routes");
-const exampleRoutes = require("./app/routes/example_routes");
 const messageRoutes = require("./app/routes/message_routes");
 const corsOptions = require("./config/corsOptions");
 

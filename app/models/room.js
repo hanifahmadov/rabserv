@@ -1,7 +1,7 @@
 /* eslint-disable */
-const mongoose = require('mongoose')
-const Message = require('./message')
-const Schema = mongoose.Schema
+const mongoose = require("mongoose");
+const Message = require("./message");
+const Schema = mongoose.Schema;
 
 const roomSchema = new mongoose.Schema(
 	{
@@ -13,28 +13,30 @@ const roomSchema = new mongoose.Schema(
 		},
 
 		owner: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'User',
-            required: true
+			type: mongoose.Schema.Types.Mixed,
+			ref: "User",
+			required: true,
 		},
 
-		validUsers: [
+		users: [
 			{
 				type: mongoose.Schema.ObjectId,
-				ref: 'User',
+				ref: "User",
 			},
 		],
-	
+
 		messages: [
 			{
 				type: Schema.ObjectId,
-				ref: 'Message'
+				ref: "Message",
 			},
 		],
 	},
 	{
 		timestamps: true,
 	}
-)
+);
 
-module.exports = mongoose.model('Room', roomSchema)
+
+
+module.exports = mongoose.model("Room", roomSchema);

@@ -50,6 +50,7 @@ class IO {
 							process.env.ACCESS_TOKEN_SECRET
 						);
 
+						// get signedin user fromdb
 						let user = await User.findOne({
 							_id: UserInfo.id,
 						});
@@ -58,13 +59,14 @@ class IO {
 						if (!user) next(new BadCredentialsError());
 
 						// else attach user to socket
-						socket.user = new UserSocket(this, socket, user);
+						socket.user = user;
 
 						this.users.push(socket);
 
 						// continue
 						next();
 					} catch (err) {
+						console.log("err code", err.code);
 						// if jwt is expired
 						console.log(" TOKEN EXPIREDDDDD");
 						next(new SocketExpireTokendError());
@@ -83,47 +85,41 @@ class IO {
 			 */
 
 			// handling the connections and disconnections right on the server
-			.on("connection", (socket) => {
-				console.log("new connection : " + socket.user.info.email);
+			.on("connection", async (socket) => {
+				console.log("new connection : " + socket.user.email);
 
-				this.server.emit(
-					"new_connection",
-					"just joined :: " + socket.user.info.email
-				);
+				// setup basics
+
+				try {
+					// created a user object
+					const newUser = new UserSocket(this, socket);
+
+					// created a default general room for all
+					// need an room id for creating a messages
+					let roomGeneral = await Room.findOne({ owner: 8080 });
+
+					if (!roomGeneral) {
+						console.log("room general created!");
+						roomGeneral = await Room.create({
+							name: "general",
+							owner: 8080,
+							users: socket.user._id,
+						});
+					}
+
+					this.server.emit(
+						"just_connected", { username: socket.user.email, newRoom: roomGeneral}
+					);
+
+				} catch (err) {
+					console.log(err.code);
+				}
 
 				socket.on("disconnect", () => {
-					console.log(
-						"new disconnection : " + socket.user.info.email
-					);
+					console.log("new disconnection : " + socket.user.email);
 					this.server.emit(
-						"new_disconnection",
-						"just disconnected :: " + socket.user.info.email
+						"just_disconnected", { username: socket.user.email }
 					);
-				});
-
-				socket.on("send_message", async (msg) => {
-					// verify token first then reply
-
-					console.log(msg);
-
-					try {
-						const { UserInfo } = jwt.verify(
-							socket.user.info.accessToken,
-							process.env.ACCESS_TOKEN_SECRET
-						);
-
-						if (UserInfo.id) {
-							let temp =
-								msg + " from :: " + socket.user.info.email;
-
-							console.log(temp);
-							this.messages.push(temp);
-							this.server.emit("new_message", this.messages);
-						}
-					} catch (err) {
-						console.log("token expired");
-						console.log(err);
-					}
 				});
 			});
 	}
@@ -134,7 +130,6 @@ class IO {
 		newServer.rooms.push(0);
 		return newServer;
 	}
-
 
 	sendResponse(res, user) {
 		console.log("server sending message: ", res);
@@ -148,11 +143,10 @@ class IO {
 	}
 
 	createNewRoom(roomName, roomId) {
-		const room = { id: roomId, name: roomName};
+		const room = { id: roomId, name: roomName };
 		this.rooms.push(room);
 		return room;
 	}
-
 }
 
 module.exports = IO;

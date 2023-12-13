@@ -1,5 +1,6 @@
 /* eslint-disable */
 const mongoose = require("mongoose");
+const Room = require('./room')
 
 const messageSchema = new mongoose.Schema(
 	{
@@ -7,6 +8,7 @@ const messageSchema = new mongoose.Schema(
 			type: mongoose.Schema.Types.ObjectId,
 			ref: "User",
 			required: true,
+			default: 'system'
 		},
 
 		room: {
