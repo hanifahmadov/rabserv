@@ -3,6 +3,7 @@ const Emitter = require("events");
 const UserSocket = require("./UserSocket");
 const Message = require("../app/models/message");
 const Room = require("../app/models/room");
+const mongoose = require("mongoose");
 const {
 	SocketMissingTokenError,
 	SocketExpireTokendError,
@@ -18,7 +19,7 @@ class IO {
 	constructor(server) {
 		this.events = new Emitter();
 		this.server = server;
-		this.rooms = ["general", "jokes"];
+		this.rooms = new Set();
 		this.users = [];
 		this.messages = [];
 		this.newJoinedUser = undefined;
@@ -96,57 +97,84 @@ class IO {
 
 					// created a default general room for all
 					// need an room id for creating a messages
-					let roomGeneral = await Room.findOne({ owner: 8080 });
+					let room = await Room.findOne({ name: "general" });
 
-					if (!roomGeneral) {
+					// console.log(room)
+
+					// if roomName is
+					if (!room) {
 						console.log("room general created!");
-						roomGeneral = await Room.create({
+						room = await Room.create({
 							name: "general",
-							owner: 8080,
-							users: socket.user._id,
+							owner: mongoose.Types.ObjectId()
 						});
 					}
 
-					this.server.emit(
-						"just_connected", { username: socket.user.email, newRoom: roomGeneral}
-					);
+					await room.users.push(socket.user._id);
+					await room.save();
 
+
+					socket.join(room._id.toString())
+
+					console.log("new users aded to room general and saved");
+
+					
+					const allRooms = await Room.find().populate({
+						path: "users",
+						select: "-accessToken -hashedPassword",
+					}).populate({
+						path: "owner",
+						select: "-accessToken -hashedPassword",
+					})
+
+					this.server.emit("just_connected", {
+						justConnected: socket.user.email,
+						room: [...allRooms],
+					});
 				} catch (err) {
-					console.log(err.code);
+					console.log("err code ", err);
 				}
 
+				// ON DISCONNECT
 				socket.on("disconnect", () => {
 					console.log("new disconnection : " + socket.user.email);
-					this.server.emit(
-						"just_disconnected", { username: socket.user.email }
-					);
+					this.server.emit("just_disconnected", {
+						username: socket.user.email,
+					});
 				});
 			});
+
+		// SERVER ON NEW ROOM
+		// this.server.on("create_room", (result) => {
+		// 	console.log(
+		// 		"🚀 ~ file: IO.js:140 ~ IO ~ constructor ~ result:",
+		// 		result
+		// 	);
+		// });
 	}
 
 	static create(server) {
 		const newServer = new this(server);
 		// create one room for all users to use
-		newServer.rooms.push(0);
 		return newServer;
 	}
 
-	sendResponse(res, user) {
-		console.log("server sending message: ", res);
-		this.server
-			.to(res.roomId)
-			.emit(`response`, `from user ${user}:: ` + res);
-	}
+	// sendResponse(res, user) {
+	// 	console.log("server sending message: ", res);
+	// 	this.server
+	// 		.to(res.roomId)
+	// 		.emit(`response`, `from user ${user}:: ` + res);
+	// }
 
-	findRoomById(roomId) {
-		return this.rooms.find((room) => room.id === roomId);
-	}
+	// findRoomById(roomId) {
+	// 	return this.rooms.find((room) => room.id === roomId);
+	// }
 
-	createNewRoom(roomName, roomId) {
-		const room = { id: roomId, name: roomName };
-		this.rooms.push(room);
-		return room;
-	}
+	// createNewRoom(roomName, roomId) {
+	// 	const room = { id: roomId, name: roomName };
+	// 	this.rooms.push(room);
+	// 	return room;
+	// }
 }
 
 module.exports = IO;

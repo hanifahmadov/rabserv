@@ -11,6 +11,8 @@ const passport = require("passport");
 const bearer = require("passport-http-bearer");
 const jwt = require("jsonwebtoken");
 const User = require("../app/models/user");
+const asyncHandler = require("express-async-handler");
+const chalk = require("chalk");
 
 class UserSocket {
 	constructor(server, socket) {
@@ -25,55 +27,65 @@ class UserSocket {
 		this.socket.on("send_message", async (msg) => {
 			console.log(msg);
 
-			try {
-				// get decoded out of token verification
-				const { UserInfo } = jwt.verify(
+		
+				jwt.verify(
 					this.socket.user.accessToken,
-					process.env.ACCESS_TOKEN_SECRET
+					process.env.ACCESS_TOKEN_SECRET,
+					(err, decoded) => {
+						if (err) {
+							console.log("error", err);
+							this.socket.emit("custom_error", err);
+						} else {
+							console.log("msg sends to provided roomId");
+							this.server.server.to(msg.roomId).emit(
+								"new_message",
+								msg
+							);
+						}
+					}
 				);
-
-				// console.log("token is valid");
-
-				// if token is valid
-				if (UserInfo.id) {
-					
-					//create a Message
-
-					// console.log(temp);
-					this.server.messages.push(temp);
-					this.server.server.emit(
-						"new_message",
-						this.server.messages
-					);
-				}
-
-			} catch (err) {
-				// if token expired
-				console.log("token expired");
-				console.log(err);
-			}
+		
 		});
 
-		// socket.on("send_message", async (msg) => {
-		// 	// verify token first then reply
+		this.socket.on(
+			"create_room",
+			asyncHandler(async (msg) => {
+				console.log("UserSockets ~ on.create_room ~ msg:", msg);
 
-		// 	this.messages.push(msg);
-		// 	this.server.emit("new_message", this.messages);
+				await Room.create({
+					name: msg.roomName,
+					owner: msg.roomOwner,
+					users: msg.roomOwner,
+				})
+					.then(async (room) => {
+						let res = await Room.populate(room, {
+							path: "users owner",
+							select: "-accessToken -hashedPassword",
+						});
 
-		// 	// try {
-		// 	// 	const { UserInfo } = jwt.verify(socket.user.accessToken, process.env.ACCESS_TOKEN_SECRET);
+						this.server.server.emit("new_room", {
+							room: res,
+						});
+					})
+					.catch((err) => {
+						console.log(
+							chalk.red(
+								"72: UserSocket ~ create newroom catch error "
+							)
+						);
+						// TODO
+						// create a custom error that will return an already exist error
+						// this is temporary
+						this.socket.emit(
+							"custom_error",
+							new BadCredentialsError()
+						);
+					});
 
-		// 	// 	console.log(UserInfo)
-
-		// 	// 	if(UserInfo && UserInfo.id && UserInfo.email){
-		// 	// 		this.messages.push(msg);
-		// 	// 		this.server.emit("new_message", this.messages);
-		// 	// 	}
-		// 	// } catch(err){
-		// 	// 	console.log(err)
-		// 	// 	// next(new SocketExpireTokendError());
-		// 	// }
-		// });
+				// if(!newRoom) throw new BadCredentialsError()
+				// else this.server.server.emit("new_room", { room: await newRoom.populate('owner') });
+			})
+		);
 	}
 }
 
