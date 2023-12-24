@@ -73,7 +73,7 @@ router.post(
 			{
 				UserInfo: {
 					id: user._id,
-					email: user.email
+					email: user.email,
 				},
 			},
 			process.env.ACCESS_TOKEN_SECRET,
@@ -97,6 +97,7 @@ router.post(
 
 		//# set users accessToken
 		user.accessToken = accessToken;
+		user.signedIn = true;
 
 		// save user
 		await user.save();
@@ -149,27 +150,33 @@ router.delete(
 		const cookies = req.cookies;
 		const { _id } = req.body;
 
-		if (!cookies || !cookies.jwt) return res.sendStatus(204); //No content
-
+		if (!cookies || !cookies.jwt) {
+			console.log("cokkies ARE EMPTY, returns 204");
+			res.sendStatus(204); //No content
+		}
 		// clear cookies
 		res.clearCookie("jwt", {
 			httpOnly: true,
 			sameSite: "None",
 			secure: true,
 		});
-		console.log(chalk.green("cookies cleared"));
+
+		console.log(chalk.green("cookies CLEARED, and returns 204"));
+		// save the token and respond with 204
 
 		// clear access token in user
-		let user = await User.findOne({ _id});
+		let user = await User.findOne({ _id });
 
 		// create an custom Error like UserNotFound error
 		if (!user) throw new BadCredentialsError();
-		
-		user.accessToken = null;
-		console.log(chalk.green("accessToken cleared"));
 
-		// save the token and respond with 204
+		user.accessToken = null;
+		
 		await user.save();
+
+		console.log(
+			chalk.green("accessToken and signedIn cleared, user saved")
+		);
 
 		// response
 		res.sendStatus(204); //No content

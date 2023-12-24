@@ -20,7 +20,7 @@ class IO {
 		this.events = new Emitter();
 		this.server = server;
 		this.rooms = new Set();
-		this.users = [];
+		this.activeusers = [];
 		this.messages = [];
 		this.newJoinedUser = undefined;
 
@@ -43,6 +43,8 @@ class IO {
 				} else {
 					const token = authorization.split(" ")[1];
 
+					console.log("toeknnnn", token)
+
 					// verify token
 					try {
 						// if jwt is valid
@@ -50,19 +52,19 @@ class IO {
 							token,
 							process.env.ACCESS_TOKEN_SECRET
 						);
-
+						console.log("UserInfooo", UserInfo)
 						// get signedin user fromdb
 						let user = await User.findOne({
 							_id: UserInfo.id,
 						});
+
+						
 
 						// if user not found or error
 						if (!user) next(new BadCredentialsError());
 
 						// else attach user to socket
 						socket.user = user;
-
-						this.users.push(socket);
 
 						// continue
 						next();
@@ -87,17 +89,21 @@ class IO {
 
 			// handling the connections and disconnections right on the server
 			.on("connection", async (socket) => {
-				console.log("new connection : " + socket.user.email);
 
+				console.log("new connection : " + socket.user.email);
 				// setup basics
+
+				this.activeusers.push(socket.user._id);
 
 				try {
 					// created a user object
-					const newUser = new UserSocket(this, socket);
 
 					// created a default general room for all
 					// need an room id for creating a messages
 					let room = await Room.findOne({ name: "general" });
+					let users = await User.find().select('-accessToken -hashedPassword');
+
+
 
 					// console.log(room)
 
@@ -106,40 +112,77 @@ class IO {
 						console.log("room general created!");
 						room = await Room.create({
 							name: "general",
-							owner: mongoose.Types.ObjectId()
+							owner: mongoose.Types.ObjectId(),
 						});
 					}
 
 					await room.users.push(socket.user._id);
 					await room.save();
 
+					socket.join(room.name.trim());
 
-					socket.join(room._id.toString())
+					// console.log("new users aded to room general and saved");
 
-					console.log("new users aded to room general and saved");
+					// .populate({
+					// 	path: "users owner",
+					// 	select: "-accessToken -hashedPassword",
+					// })
 
-					
-					const allRooms = await Room.find().populate({
-						path: "users",
-						select: "-accessToken -hashedPassword",
-					}).populate({
-						path: "owner",
-						select: "-accessToken -hashedPassword",
-					})
+					await Room.find().then(async (rooms) => {
+						await rooms.map((room) => {
+							if (room.users.includes(socket.user._id)) {
+								// console.log(socket.user.email + " joining to " + room.name)
+								socket.join(room.name);
+							}
+						});
 
-					this.server.emit("just_connected", {
-						justConnected: socket.user.email,
-						room: [...allRooms],
+						const newUser = new UserSocket(this, socket);
+						
+
+						const populatedRooms = await Room.populate(rooms, {
+							path: "users owner messages",
+							select: "-accessToken -hashedPassword",
+
+							populate: {
+								path: "owner", // Nested population for the 'owner' field
+								select: "-accessToken -hashedPassword", // Exclude fields for 'owner'
+							},
+						});
+
+						/**
+						 * 	why in re-spread the popilatedRooms and users
+						 * 	cause, it may possible to have just a sigle room or single user
+						 * 	then in the client side, it may not be get accepted single object but 
+						 * 	client side will get the single object in an array [ {} ]
+						 * 	and in this case the client-side response can be iterrable
+						 * 
+						 */
+						this.server.emit("just_connected", {
+							justConnected: socket.user,
+							rooms: [...populatedRooms],
+						});
+
+						this.server.emit('usersOnConnection', {
+							activeUsers:this.activeusers,
+							allUsers: users
+						})
 					});
 				} catch (err) {
 					console.log("err code ", err);
 				}
 
 				// ON DISCONNECT
-				socket.on("disconnect", () => {
+				socket.on("disconnect", async () => {
 					console.log("new disconnection : " + socket.user.email);
-					this.server.emit("just_disconnected", {
-						username: socket.user.email,
+
+					let users = await User.find().select('-accessToken -hashedPassword');
+
+					let index = this.activeusers.indexOf(socket.user._id)
+					this.activeusers.splice(index, 1)
+					
+					this.server.emit("usersOnDisconnection", {
+						activeUsers:this.activeusers,
+						allUsers: users
 					});
 				});
 			});

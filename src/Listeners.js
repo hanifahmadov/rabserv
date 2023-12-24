@@ -4,7 +4,8 @@ const passport = require("passport");
 const bearer = require("passport-http-bearer");
 const jwt = require("jsonwebtoken");
 const User = require("../app/models/user");
-
+const multer = require('multer')
+const path	= require('path')
 const Room = require("../app/models/room");
 const UserSocket = require("./UserSocket");
 const { BadCredentialsError } = require("../lib/custom_errors");
@@ -104,6 +105,9 @@ const checkRoomAccess = (userID, roomId) => {
 		}
 	});
 };
+
+
+
 
 module.exports = {
 	addListeners,

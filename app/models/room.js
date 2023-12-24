@@ -32,10 +32,15 @@ const roomSchema = new mongoose.Schema(
 
 		messages: [
 			{
-				type: Schema.ObjectId,
+				type: mongoose.Schema.Types.ObjectId,
 				ref: "Message",
 			},
 		],
+
+		icon: {
+			type: String,
+			default: "default.png", // Provide a default URL or path if needed
+		},
 	},
 	{
 		timestamps: true,

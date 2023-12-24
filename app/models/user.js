@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema(
 
 		avatar: {
 			type: String,
-			default: "default.jpeg",
+			default: "default_user.jpeg",
 		},
 
 		blocked: {
@@ -45,7 +45,7 @@ const userSchema = new mongoose.Schema(
 			type: String,
 			default: null,
 			trim: true,
-		},
+		}
 	},
 
 	{

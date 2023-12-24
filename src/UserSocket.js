@@ -2,6 +2,7 @@
 /* eslint-disable */
 const Message = require("../app/models/message");
 const Room = require("../app/models/room");
+
 const {
 	SocketMissingTokenError,
 	SocketExpireTokendError,
@@ -24,27 +25,90 @@ class UserSocket {
 	}
 
 	listerners() {
-		this.socket.on("send_message", async (msg) => {
-			console.log(msg);
+		this.socket.on("send_message", async (req) => {
+			console.log(" socketon.send_message req object from client", req);
 
-		
-				jwt.verify(
-					this.socket.user.accessToken,
-					process.env.ACCESS_TOKEN_SECRET,
-					(err, decoded) => {
-						if (err) {
-							console.log("error", err);
-							this.socket.emit("custom_error", err);
-						} else {
-							console.log("msg sends to provided roomId");
-							this.server.server.to(msg.roomId).emit(
-								"new_message",
-								msg
-							);
-						}
+			jwt.verify(
+				this.socket.user.accessToken,
+				process.env.ACCESS_TOKEN_SECRET,
+				async (err, decoded) => {
+					if (err) {
+						console.log("error", err);
+						this.socket.emit("custom_error", err);
+					} else {
+						await Message.create({
+							owner: this.socket.user._id,
+							room: req.roomId,
+							text: req.msg,
+						})
+							.then(async (message) => {
+								console.log(
+									chalk.bold.red("message created"),
+									message
+								);
+
+								console.log("reqqqqqq", req);
+								await Room.findById(req.roomId)
+									.then(async (room) => {
+										console.log(
+											chalk.bold.red("room retrieved"),
+											room
+										);
+										await room.messages.push(message._id);
+										await room.save();
+
+										console.log(
+											chalk.bold.red(
+												"room messages has been pushed, and saved"
+											),
+											room
+										);
+
+										console.log(
+											"msg sends to provided roomId"
+										);
+
+										// const populatedRoom =
+										// 	await Room.populate(room, {
+										// 		path: "users owner messages",
+										// 		select: "-accessToken -hashedPassword",
+
+										// 		populate: {
+										// 			path: "owner", // Nested population for the 'owner' field
+										// 			select: "-accessToken -hashedPassword", // Exclude fields for 'owner'
+										// 		},
+										// 	});
+
+										const populatedMessage =
+											await Message.populate(message, {
+												path: "owner",
+												select: "-accessToken -hashedPassword",
+											});
+
+										console.log(
+											chalk.bold.red(
+												"populated message and response"
+											),
+											populatedMessage
+										);
+										this.server.server
+											.to(room.name)
+											.emit(
+												"new_message",
+												populatedMessage
+											);
+									})
+									.catch((err) => {
+										console.log("room cant find");
+									});
+							})
+							.catch((err) => {
+								console.log("message cretation error");
+								console.log(err);
+							});
 					}
-				);
-		
+				}
+			);
 		});
 
 		this.socket.on(
@@ -56,8 +120,13 @@ class UserSocket {
 					name: msg.roomName,
 					owner: msg.roomOwner,
 					users: msg.roomOwner,
+					icon: msg.roomIconTitle
 				})
 					.then(async (room) => {
+						// join the room that u just created
+						this.socket.join(room.name);
+						this.joinedrooms.push(room.name);
+
 						let res = await Room.populate(room, {
 							path: "users owner",
 							select: "-accessToken -hashedPassword",
