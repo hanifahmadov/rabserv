@@ -100,7 +100,7 @@ class IO {
 
 					// created a default general room for all
 					// need an room id for creating a messages
-					let room = await Room.findOne({ name: "general" });
+					let room = await Room.findOne({ name: "rabbit" });
 					let users = await User.find().select('-accessToken -hashedPassword');
 
 
@@ -111,7 +111,7 @@ class IO {
 					if (!room) {
 						console.log("room general created!");
 						room = await Room.create({
-							name: "general",
+							name: "rabbit",
 							owner: mongoose.Types.ObjectId(),
 						});
 					}

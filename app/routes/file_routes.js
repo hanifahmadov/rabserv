@@ -44,9 +44,9 @@ const router = express.Router()
 
 //: INDEX
 //: GET /examples
-router.post('/room_avatars', requireAccessToken, avatars_multer.single('avatars'), (req, res, next) => {
+router.post('/new_room_avatars', requireAccessToken, avatars_multer.single('avatars'), (req, res, next) => {
  
-
+    console.log("req filemameadsd", req.filename)
 
     res.status(200).json({ imgTitle: req.filename});
 })
