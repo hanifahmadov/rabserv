@@ -9,6 +9,7 @@ const { Server } = require("socket.io");
 const http = require("http");
 const path = require("path");
 const IO = require("./src/IO");
+const bodyParser = require('body-parser')
 
 // create .env file for private db || apis
 require("dotenv").config();
@@ -49,10 +50,16 @@ const socketio = new Server(server, {
 	cors: corsOptions,
 });
 
-
-
 // cors
 app.use(cors(corsOptions));
+
+// cookie parser
+app.use(cookies());
+
+// this parses requests sent by `$.ajax`, which use a different content type
+app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // register passport authentication middleware
 app.use(auth);
@@ -61,11 +68,7 @@ app.use(express.static(path.join(__dirname, 'public/defaults')));
 app.use(express.static(path.join(__dirname, 'public/room_avatars')));
 app.use(express.static(path.join(__dirname, 'public/profile_avatars')));
 
-// cookie parser
-app.use(cookies());
 
-// this parses requests sent by `$.ajax`, which use a different content type
-app.use(express.urlencoded({ extended: true }));
 
 // log each request as it comes in for debugging
 app.use(requestLogger);

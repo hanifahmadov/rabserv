@@ -1,6 +1,6 @@
 /* eslint-disable */
 const multer  = require('multer')
-const avatars_multer = require('../middlewares/avatars_multer')
+const room_multer = require('../middlewares/room_multer')
 // Express docs: http://expressjs.com/en/api.html
 const express = require('express')
 
@@ -44,7 +44,7 @@ const router = express.Router()
 
 //: INDEX
 //: GET /examples
-router.post('/new_room_avatars', requireAccessToken, avatars_multer.single('avatars'), (req, res, next) => {
+router.post('/newroom_icon', requireAccessToken, room_multer.single('icon'), (req, res, next) => {
  
     console.log("req filemameadsd", req.filename)
 

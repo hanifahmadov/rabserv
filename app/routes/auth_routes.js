@@ -20,11 +20,9 @@ const User = require("../models/user");
 const router = express.Router();
 const requireToken = passport.authenticate("bearer", { session: false });
 
-
 router.get(
 	"/refreshAccess",
 	asyncHandler(async (req, res, next) => {
-
 		const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 		console.log("refresher routes");
@@ -38,8 +36,6 @@ router.get(
 				message: "Unauthorized! Cookies Refresh Token is missing",
 			});
 
-
-
 		// if refresh token, have it
 		const refreshToken = cookies.jwt;
 
@@ -49,11 +45,14 @@ router.get(
 			refreshToken,
 			process.env.REFRESH_TOKEN_SECRET,
 			asyncHandler(async (err, decoded) => {
-				if (err)
+				if (err) {
 					return res.status(403).json({
 						message:
 							"Forbidden. Refresh Token has expired. Please login!",
 					});
+				}
+
+
 
 				const user = await User.findOne({ email: decoded.email });
 
@@ -79,7 +78,6 @@ router.get(
 
 				// save user
 				await user.save();
-
 				await delay(1000);
 
 				// response

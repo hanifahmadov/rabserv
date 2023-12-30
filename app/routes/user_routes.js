@@ -6,6 +6,8 @@ const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const asyncHandler = require("express-async-handler");
+const multer  = require('multer')
+const signup_multer = require('../middlewares/signup_multer')
 
 // imports
 const {
@@ -27,8 +29,11 @@ const router = express.Router();
 // SIGN UP
 router.post(
 	"/signup",
+	signup_multer.single('avatar'),
 	asyncHandler(async (req, res, next) => {
-		const { email, password, passwordConfirmation } = req.body.credentials;
+
+		const { email, password, passwordConfirmation } = req.body;
+		const file_avatar = req.filename;
 
 		// check inputs
 		if (!email || !password || password !== passwordConfirmation)
@@ -41,6 +46,8 @@ router.post(
 		const user = await User.create({
 			email,
 			hashedPassword: hashed,
+			username: email.split('@')[0],
+			avatar: file_avatar
 		});
 
 		// response
@@ -53,7 +60,9 @@ router.post(
 router.post(
 	"/signin",
 	asyncHandler(async (req, res, next) => {
-		const { password, email } = req.body.credentials;
+		const { password, email, remember } = req.body.credentials;
+
+		console.log('remember', remember)
 
 		// gets user from db
 		const user = await User.findOne({ email });
@@ -84,7 +93,7 @@ router.post(
 		const refreshToken = jwt.sign(
 			{ email: user.email },
 			process.env.REFRESH_TOKEN_SECRET,
-			{ expiresIn: "1d" }
+			{ expiresIn: remember ? "7d" : '1d' }
 		);
 
 		// Create secure cookie with refresh token
