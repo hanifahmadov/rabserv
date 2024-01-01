@@ -26,7 +26,6 @@ class UserSocket {
 
 	listerners() {
 		this.socket.on("send_message", async (req) => {
-			console.log(" socketon.send_message req object from client", req);
 
 			jwt.verify(
 				this.socket.user.accessToken,
@@ -42,12 +41,6 @@ class UserSocket {
 							text: req.msg,
 						})
 							.then(async (message) => {
-								console.log(
-									chalk.bold.red("message created"),
-									message
-								);
-
-								console.log("reqqqqqq", req);
 								await Room.findById(req.roomId)
 									.then(async (room) => {
 										console.log(
@@ -56,17 +49,6 @@ class UserSocket {
 										);
 										await room.messages.push(message._id);
 										await room.save();
-
-										console.log(
-											chalk.bold.red(
-												"room messages has been pushed, and saved"
-											),
-											room
-										);
-
-										console.log(
-											"msg sends to provided roomId"
-										);
 
 										// const populatedRoom =
 										// 	await Room.populate(room, {
@@ -91,12 +73,10 @@ class UserSocket {
 											),
 											populatedMessage
 										);
-										this.server.server
-											.to(room.name)
-											.emit(
-												"new_message",
-												populatedMessage
-											);
+										this.server.server.emit(
+											"new_message",
+											populatedMessage
+										);
 									})
 									.catch((err) => {
 										console.log("room cant find");
@@ -120,7 +100,7 @@ class UserSocket {
 					name: msg.roomName,
 					owner: msg.roomOwner,
 					users: msg.roomOwner,
-					icon: msg.roomIconTitle
+					icon: msg.roomIconTitle,
 				})
 					.then(async (room) => {
 						// join the room that u just created
@@ -150,11 +130,26 @@ class UserSocket {
 							new BadCredentialsError()
 						);
 					});
-
-				// if(!newRoom) throw new BadCredentialsError()
-				// else this.server.server.emit("new_room", { room: await newRoom.populate('owner') });
 			})
 		);
+
+		this.socket.on("joinroom", async (payload) => {
+
+			console.log('payloadd', )
+			const room = await Room.findById(payload.roomId);
+
+			await room.users.push(payload.userId);
+			await room.save();
+
+			const updatetRoom = await Room.populate(room, {
+				path: "owner users messages",
+				select: "-accessToken -hashedPassword",
+			});
+
+			
+
+			this.socket.emit("joinroom", { room: updatetRoom });
+		});
 	}
 }
 

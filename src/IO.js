@@ -43,8 +43,6 @@ class IO {
 				} else {
 					const token = authorization.split(" ")[1];
 
-					console.log("toeknnnn", token)
-
 					// verify token
 					try {
 						// if jwt is valid
@@ -52,7 +50,7 @@ class IO {
 							token,
 							process.env.ACCESS_TOKEN_SECRET
 						);
-						console.log("UserInfooo", UserInfo)
+
 						// get signedin user fromdb
 						let user = await User.findOne({
 							_id: UserInfo.id,
@@ -102,7 +100,6 @@ class IO {
 					// need an room id for creating a messages
 					let room = await Room.findOne({ name: "rabbit" });
 					let users = await User.find().select('-accessToken -hashedPassword');
-
 
 
 					// console.log(room)
@@ -186,14 +183,6 @@ class IO {
 					});
 				});
 			});
-
-		// SERVER ON NEW ROOM
-		// this.server.on("create_room", (result) => {
-		// 	console.log(
-		// 		"🚀 ~ file: IO.js:140 ~ IO ~ constructor ~ result:",
-		// 		result
-		// 	);
-		// });
 	}
 
 	static create(server) {
@@ -202,22 +191,6 @@ class IO {
 		return newServer;
 	}
 
-	// sendResponse(res, user) {
-	// 	console.log("server sending message: ", res);
-	// 	this.server
-	// 		.to(res.roomId)
-	// 		.emit(`response`, `from user ${user}:: ` + res);
-	// }
-
-	// findRoomById(roomId) {
-	// 	return this.rooms.find((room) => room.id === roomId);
-	// }
-
-	// createNewRoom(roomName, roomId) {
-	// 	const room = { id: roomId, name: roomName };
-	// 	this.rooms.push(room);
-	// 	return room;
-	// }
 }
 
 module.exports = IO;

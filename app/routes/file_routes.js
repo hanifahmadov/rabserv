@@ -45,9 +45,6 @@ const router = express.Router()
 //: INDEX
 //: GET /examples
 router.post('/newroom_icon', requireAccessToken, room_multer.single('icon'), (req, res, next) => {
- 
-    console.log("req filemameadsd", req.filename)
-
     res.status(200).json({ imgTitle: req.filename});
 })
 
