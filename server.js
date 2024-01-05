@@ -1,4 +1,6 @@
 /* eslint-disable */
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = "mongodb+srv://hahmadov:<password>@rabbit.svkn4ta.mongodb.net/?retryWrites=true&w=majority";
 
 // NPM packages
 const express = require("express");
