@@ -173,6 +173,7 @@ class IO {
 					console.log("new disconnection : " + socket.user.email);
 
 					let users = await User.find().select('-accessToken -hashedPassword');
+					console.log('just checking in')
 
 					let index = this.activeusers.indexOf(socket.user._id)
 					this.activeusers.splice(index, 1)
