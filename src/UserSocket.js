@@ -135,20 +135,15 @@ class UserSocket {
 
 		this.socket.on("joinroom", async (payload) => {
 
-			console.log('payloadd', )
+			console.log('payloadd', payload)
 			const room = await Room.findById(payload.roomId);
 
 			await room.users.push(payload.userId);
 			await room.save();
 
-			const updatetRoom = await Room.populate(room, {
-				path: "owner users messages",
-				select: "-accessToken -hashedPassword",
-			});
+			const allrooms = await Room.find().populate("owner users messages");
 
-			
-
-			this.socket.emit("joinroom", { room: updatetRoom });
+			this.socket.emit("joinroom", { rooms: allrooms });
 		});
 	}
 }
