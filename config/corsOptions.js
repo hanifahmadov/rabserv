@@ -2,6 +2,7 @@
 const allowedOrigins = [ 
     process.env.CLIENT_DEV_ORIGIN,
     process.env.CLIENT_PRO_ORIGIN,
+    process.env.CLIENT_PRO_ORIGIN_2,
 ]
 
 const corsOptions = {
