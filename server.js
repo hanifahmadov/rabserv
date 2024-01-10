@@ -76,6 +76,8 @@ app.use(express.static(path.join(__dirname, 'public/profile_avatars')));
 app.use(requestLogger);
 
 app.get("/", (req, res) => res.json({ message: "welcome to RabbitChat" }));
+app.get("/test1", (req, res) => res.json({ message: "welcome to RabbitChat TEST 1111" }));
+app.get("/test2", (req, res) => res.json({ message: "welcome to RabbitChat TEST 2222" }));
 
 // refresh token routes
 app.use(authRoutes);
@@ -95,7 +97,7 @@ app.set('ioserver', IOserver)
 // error Handler
 app.use(errorHandler);
 
-server.listen(PORT, () => {
+server.listen(PORT, "127.0.0.1", () => {
 	console.log(":: Server running on port", PORT);
 });
 
