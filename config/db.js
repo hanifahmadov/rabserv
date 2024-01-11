@@ -10,6 +10,7 @@ const database = {
   // set this to mongodb atlas after  .env file created
   development: `mongodb://localhost/${mongooseBaseName}-dev`,
   test: `mongodb://localhost/${mongooseBaseName}-test`
+
 }
 
 // Identify if development environment is test or development
@@ -18,6 +19,6 @@ const localDb = process.env.TESTENV ? database.test : database.development
 
 // Environment variable DB_URI will be available in
 // heroku production evironment otherwise use test or development db
-const currentDB = process.env.DB_URI || localDb
+const currentDB = process.env.DB ? process.env.DB : localDb
 
 module.exports = currentDB
