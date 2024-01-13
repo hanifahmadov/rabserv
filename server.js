@@ -35,9 +35,8 @@ const requireAccessToken = passport.authenticate("bearer", { session: false });
 // ports
 const PORT = process.env.PORT || 3040;
 
-console.log("DBDBDBDBD", db)
+// console.log("DB", db)
 
-console.log("process.env.DB", process.env.DB)
 // database connection
 mongoose
 	.connect(db, {
