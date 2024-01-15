@@ -19,7 +19,8 @@ const IO = require("./src/IO");
 const bodyParser = require("body-parser");
 
 // create .env file for private db || apis
-require("dotenv").config();
+// require("dotenv").config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // imports
 const db = require("./config/db");
