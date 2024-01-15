@@ -103,26 +103,7 @@ app.use(errorHandler);
 server.listen(PORT, "127.0.0.1", async () => {
 	console.log(":: Server running on port", PORT);
 
-	const secret_name = "project-rabbit-server-env";
-
-	const client = new SecretsManagerClient({
-		region: "us-east-1",
-		credentials: {
-			accessKeyId: 'AKIAUFOOMU6ZQLICZKEO',
-			secretAccessKey: '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',
-		  },
-	});
-
-	response = await client.send(
-		new GetSecretValueCommand({
-			SecretId: secret_name,
-			VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
-		})
-	);
-
-	const secret = response.SecretString;
-
-	console.log("secretString", JSON.parse(secret));
+	console.log('process', process.env.MEMESH)
 });
 
 // // needed just for testing

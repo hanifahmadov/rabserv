@@ -15,7 +15,6 @@
   "author": "haniff",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.491.0",
     "axios": "^1.6.2",
     "bcrypt": "^3.0.7",
     "body-parser": "^1.20.2",
