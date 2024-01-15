@@ -122,7 +122,7 @@ server.listen(PORT, "127.0.0.1", async () => {
 
 	const secret = response.SecretString;
 
-	console.log("secretString", JSON.parse(secret) );
+	console.log("secretString", JSON.parse(secret));
 });
 
 // // needed just for testing
