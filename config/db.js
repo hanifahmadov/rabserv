@@ -19,6 +19,6 @@ const localDb = process.env.TESTENV ? database.test : database.development
 
 // Environment variable DB_URI will be available in
 // heroku production evironment otherwise use test or development db
-const currentDB = process.env.DB ? process.env.MONGO_DB : localDb
+const currentDB = process.env.MONGO_DB ? process.env.MONGO_DB : localDb
 
 module.exports = currentDB
