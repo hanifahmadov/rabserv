@@ -1,11 +1,4 @@
 /* eslint-disable */
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const uri =
-	"mongodb+srv://hahmadov:hahmadov2023@rabbit.svkn4ta.mongodb.net/?retryWrites=true&w=majority";
-const {
-	SecretsManagerClient,
-	GetSecretValueCommand,
-} = require("@aws-sdk/client-secrets-manager");
 
 // NPM packages
 const express = require("express");
@@ -17,6 +10,7 @@ const http = require("http");
 const path = require("path");
 const IO = require("./src/IO");
 const bodyParser = require("body-parser");
+
 
 // create .env file for private db || apis
 // require("dotenv").config();
@@ -41,9 +35,11 @@ const requireAccessToken = passport.authenticate("bearer", { session: false });
 // ports
 const PORT = process.env.PORT || 3040;
 
+console.log('dbdbdbd', db)
+
 // database connection
 mongoose
-	.connect(uri, {
+	.connect(db, {
 		useNewUrlParser: true,
 		useCreateIndex: true,
 		useUnifiedTopology: true,
@@ -80,12 +76,6 @@ app.use(express.static(path.join(__dirname, "public/profile_avatars")));
 app.use(requestLogger);
 
 app.get("/", (req, res) => res.json({ message: "welcome to RabbitChat" }));
-app.get("/test1", (req, res) =>
-	res.json({ message: "welcome to RabbitChat TEST 1111" })
-);
-app.get("/test2", (req, res) =>
-	res.json({ message: "welcome to RabbitChat TEST 2222" })
-);
 
 // refresh token routes
 app.use(authRoutes);
@@ -103,8 +93,6 @@ app.use(errorHandler);
 
 server.listen(PORT, "127.0.0.1", async () => {
 	console.log(":: Server running on port", PORT);
-
-	console.log('process', process.env.MEMESH)
 });
 
 // // needed just for testing
