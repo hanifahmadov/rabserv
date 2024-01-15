@@ -1,6 +1,11 @@
 /* eslint-disable */
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://hahmadov:<password>@rabbit.svkn4ta.mongodb.net/?retryWrites=true&w=majority";
+const { MongoClient, ServerApiVersion } = require("mongodb");
+const uri =
+	"mongodb+srv://hahmadov:hahmadov2023@rabbit.svkn4ta.mongodb.net/?retryWrites=true&w=majority";
+const {
+	SecretsManagerClient,
+	GetSecretValueCommand,
+} = require("@aws-sdk/client-secrets-manager");
 
 // NPM packages
 const express = require("express");
@@ -11,7 +16,7 @@ const { Server } = require("socket.io");
 const http = require("http");
 const path = require("path");
 const IO = require("./src/IO");
-const bodyParser = require('body-parser')
+const bodyParser = require("body-parser");
 
 // create .env file for private db || apis
 require("dotenv").config();
@@ -35,11 +40,9 @@ const requireAccessToken = passport.authenticate("bearer", { session: false });
 // ports
 const PORT = process.env.PORT || 3040;
 
-// console.log("DB", db)
-
 // database connection
 mongoose
-	.connect(db, {
+	.connect(uri, {
 		useNewUrlParser: true,
 		useCreateIndex: true,
 		useUnifiedTopology: true,
@@ -68,44 +71,59 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // register passport authentication middleware
 app.use(auth);
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public/defaults')));
-app.use(express.static(path.join(__dirname, 'public/room_avatars')));
-app.use(express.static(path.join(__dirname, 'public/profile_avatars')));
-
-
+app.use(express.static(path.join(__dirname, "public/defaults")));
+app.use(express.static(path.join(__dirname, "public/room_avatars")));
+app.use(express.static(path.join(__dirname, "public/profile_avatars")));
 
 // log each request as it comes in for debugging
 app.use(requestLogger);
 
 app.get("/", (req, res) => res.json({ message: "welcome to RabbitChat" }));
-app.get("/test1", (req, res) => res.json({ message: "welcome to RabbitChat TEST 1111" }));
-app.get("/test2", (req, res) => res.json({ message: "welcome to RabbitChat TEST 2222" }));
+app.get("/test1", (req, res) =>
+	res.json({ message: "welcome to RabbitChat TEST 1111" })
+);
+app.get("/test2", (req, res) =>
+	res.json({ message: "welcome to RabbitChat TEST 2222" })
+);
 
 // refresh token routes
 app.use(authRoutes);
 
 // login funtionalities
 app.use(userRoutes);
-app.use(fileRoutes)
+app.use(fileRoutes);
 
+const IOserver = IO.create(socketio);
 
-const IOserver = IO.create(socketio)
-
-app.set('ioserver', IOserver)
-
-
-
+app.set("ioserver", IOserver);
 
 // error Handler
 app.use(errorHandler);
 
-server.listen(PORT, "127.0.0.1", () => {
+server.listen(PORT, "127.0.0.1", async () => {
 	console.log(":: Server running on port", PORT);
+
+	const secret_name = "project-rabbit-server-env";
+
+	const client = new SecretsManagerClient({
+		region: "us-east-1",
+		credentials: {
+			accessKeyId: 'AKIAUFOOMU6ZQLICZKEO',
+			secretAccessKey: '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',
+		  },
+	});
+
+	response = await client.send(
+		new GetSecretValueCommand({
+			SecretId: secret_name,
+			VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
+		})
+	);
+
+	const secret = response.SecretString;
+
+	console.log("secretString", JSON.parse(secret) );
 });
 
 // // needed just for testing
 module.exports = server;
-
-
-
-
