@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 
 		existingFiles.forEach((file) => {
 			if (file.startsWith(filename)) {
-				fs.unlinkSync(dir+file);
+				fs.unlinkSync(dir + file);
 			}
 		});
 
@@ -34,7 +34,8 @@ const storage = multer.diskStorage({
 	filename: (req, file, cb) => {
 		const ext = file.mimetype.split("/")[1];
 		req.filename =
-			req.body.email.split("@")[0] + "_" + uuidv4() + "." + ext;
+			// req.body.email.split("@")[0] + "_" + uuidv4() + "." + ext;
+			req.body.email.split("@")[0] + "." + ext;
 		cb(null, req.filename);
 	},
 });

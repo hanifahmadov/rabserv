@@ -17,7 +17,15 @@ const storage = multer.diskStorage({
 		const rootDir = path.dirname(require.main.filename);
 		const dir = rootDir + "/public/room_avatars/";
 
-		// fs.rmSync(dir, { recursive: true, force: true });
+		const filename = req.body.roomName.toLowerCase();
+		const existingFiles = fs.readdirSync(dir);
+
+		existingFiles.forEach((file) => {
+			if (file.startsWith(filename)) {
+				fs.unlinkSync(dir+file);
+			}
+		});
+
 		fs.mkdirSync(dir, { recursive: true }, err => {
 			cb(err, false);
 		});
@@ -27,7 +35,8 @@ const storage = multer.diskStorage({
 
 	filename: (req, file, cb) => {
 		const ext = file.mimetype.split("/")[1];
-		req.filename = req.user.email.split('@')[0] + "_" + uuidv4() + '.' + ext;
+		// req.filename = req.body.roomName.toLowerCase() + "_" + uuidv4() + '.' + ext;
+		req.filename = req.body.roomName.toLowerCase() + '.' + ext;
 		cb(null, req.filename);
 	},
 });

@@ -13,6 +13,7 @@ const passport = require("passport");
 const bearer = require("passport-http-bearer");
 const jwt = require("jsonwebtoken");
 const User = require("../app/models/user");
+const asyncHandler = require("express-async-handler");
 
 //: rename later
 class IO {
@@ -22,7 +23,7 @@ class IO {
 		this.rooms = new Set();
 		this.activeusers = [];
 		this.messages = [];
-		this.newJoinedUser = undefined;
+		this.newUser = undefined;
 
 		this.server
 			.use(async (socket, next) => {
@@ -38,7 +39,9 @@ class IO {
 					authorization == undefined ||
 					authorization == "undefined"
 				) {
-					console.log("token missing or not provided");
+					console.log(
+						"41: IO.js ~ socket: token missing or not provided"
+					);
 					next(new SocketMissingTokenError(authorization));
 				} else {
 					const token = authorization.split(" ")[1];
@@ -56,8 +59,6 @@ class IO {
 							_id: UserInfo.id,
 						});
 
-						
-
 						// if user not found or error
 						if (!user) next(new BadCredentialsError());
 
@@ -67,9 +68,9 @@ class IO {
 						// continue
 						next();
 					} catch (err) {
-						console.log("err code", err.code);
+						console.log("70: IO.js ~ err code", err.code);
 						// if jwt is expired
-						console.log(" TOKEN EXPIREDDDDD");
+						console.log("72: IO.js ~ socket: TOKEN EXPIREDDDDD");
 						next(new SocketExpireTokendError());
 					}
 				}
@@ -86,31 +87,37 @@ class IO {
 			 */
 
 			// handling the connections and disconnections right on the server
-			.on("connection", async (socket) => {
+			.on(
+				"connection",
+				asyncHandler(async (socket) => {
+					console.log(
+						"90: IO.js ~ new connection ~ username: " +
+							socket.user.email
+					);
 
-				console.log("new connection : " + socket.user.email);
-				// setup basics
+					/* SETUP BASICS */
+					const checkActiveUsers = this.activeusers.some((v) =>
+						v.equals(socket.user._id)
+					);
+					if (!checkActiveUsers) {
+						this.activeusers.push(socket.user._id);
+					}
 
-				this.activeusers.push(socket.user._id);
-
-				try {
-					// created a user object
-
-					// created a default general room for all
-					// need an room id for creating a messages
+					// Default room RABBIT
+					// Get all Users
 					let room = await Room.findOne({ name: "rabbit" });
-					let users = await User.find().select('-accessToken -hashedPassword');
+					let users = await User.find().select(
+						"-accessToken -hashedPassword"
+					);
 
-
-					// console.log(room)
-
-					// if roomName is
+					// IF RABBIT
 					if (!room) {
-						console.log("room general created!");
 						room = await Room.create({
 							name: "rabbit",
 							owner: mongoose.Types.ObjectId(),
 						});
+
+						console.log("116: IO.js ~ Rabbit room created!");
 					}
 
 					await room.users.push(socket.user._id);
@@ -118,23 +125,15 @@ class IO {
 
 					socket.join(room.name.trim());
 
-					// console.log("new users aded to room general and saved");
-
-					// .populate({
-					// 	path: "users owner",
-					// 	select: "-accessToken -hashedPassword",
-					// })
-
+					// GET ALL ROOMS
 					await Room.find().then(async (rooms) => {
 						await rooms.map((room) => {
 							if (room.users.includes(socket.user._id)) {
-								// console.log(socket.user.email + " joining to " + room.name)
-								socket.join(room.name);
+								socket.join(room.name.trim());
 							}
 						});
 
 						const newUser = new UserSocket(this, socket);
-						
 
 						const populatedRooms = await Room.populate(rooms, {
 							path: "users owner messages",
@@ -149,41 +148,53 @@ class IO {
 						/**
 						 * 	why in re-spread the popilatedRooms and users
 						 * 	cause, it may possible to have just a sigle room or single user
-						 * 	then in the client side, it may not be get accepted single object but 
+						 * 	then in the client side, it may not be get accepted single object but
 						 * 	client side will get the single object in an array [ {} ]
 						 * 	and in this case the client-side response can be iterrable
-						 * 
+						 *
 						 */
-						this.server.emit("just_connected", {
-							justConnected: socket.user,
+						this.server.emit("new_connection", {
+							newUser: socket.user,
 							rooms: [...populatedRooms],
 						});
 
-						this.server.emit('usersOnConnection', {
-							activeUsers:this.activeusers,
-							allUsers: users
+						this.server.emit("users_onConnection", {
+							activeUsers: [...new Set(this.activeusers)],
+							allUsers: users,
+						});
+					});
+
+					// ON DISCONNECT
+					socket.on(
+						"disconnection",
+						asyncHandler(async () => {
+							console.log(
+								"170: IO.js ~ socket: disconnected user: " +
+									socket.user.email
+							);
+
+							/** why retrieving all users on disconnection ?
+							 * 	cause of previous users states cant get retrieved
+							 * 	when client side socket.on disconnection
+							 * */
+							let users = await User.find().select(
+								"-accessToken -hashedPassword"
+							);
+
+							let index = this.activeusers.indexOf(
+								socket.user._id
+							);
+
+							this.activeusers.splice(index, 1);
+
+							this.server.emit("users_onDisconnection", {
+								activeUsers: this.activeusers,
+								allUsers: users,
+							});
 						})
-					});
-				} catch (err) {
-					console.log("err code ", err);
-				}
-
-				// ON DISCONNECT
-				socket.on("disconnect", async () => {
-					console.log("new disconnection : " + socket.user.email);
-
-					let users = await User.find().select('-accessToken -hashedPassword');
-					console.log('just checking in')
-
-					let index = this.activeusers.indexOf(socket.user._id)
-					this.activeusers.splice(index, 1)
-					
-					this.server.emit("usersOnDisconnection", {
-						activeUsers:this.activeusers,
-						allUsers: users
-					});
-				});
-			});
+					);
+				})
+			);
 	}
 
 	static create(server) {
@@ -191,7 +202,6 @@ class IO {
 		// create one room for all users to use
 		return newServer;
 	}
-
 }
 
 module.exports = IO;
