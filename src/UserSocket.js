@@ -25,71 +25,54 @@ class UserSocket {
 	}
 
 	listerners() {
-		this.socket.on("send_message", async (req) => {
-
-			jwt.verify(
-				this.socket.user.accessToken,
-				process.env.ACCESS_TOKEN_SECRET,
-				async (err, decoded) => {
-					if (err) {
-						console.log("error", err);
-						this.socket.emit("custom_error", err);
-					} else {
-						await Message.create({
-							owner: this.socket.user._id,
-							room: req.roomId,
-							text: req.msg,
-						})
-							.then(async (message) => {
-								await Room.findById(req.roomId)
-									.then(async (room) => {
-										console.log(
-											chalk.bold.red("room retrieved"),
-											room
-										);
-										await room.messages.push(message._id);
-										await room.save();
-
-										// const populatedRoom =
-										// 	await Room.populate(room, {
-										// 		path: "users owner messages",
-										// 		select: "-accessToken -hashedPassword",
-
-										// 		populate: {
-										// 			path: "owner", // Nested population for the 'owner' field
-										// 			select: "-accessToken -hashedPassword", // Exclude fields for 'owner'
-										// 		},
-										// 	});
-
-										const populatedMessage =
-											await Message.populate(message, {
-												path: "owner",
-												select: "-accessToken -hashedPassword",
-											});
-
-										console.log(
-											chalk.bold.red(
-												"populated message and response"
-											),
-											populatedMessage
-										);
-										this.server.server.emit(
-											"new_message",
-											populatedMessage
-										);
-									})
-									.catch((err) => {
-										console.log("room cant find");
-									});
-							})
-							.catch((err) => {
-								console.log("message cretation error");
-								console.log(err);
+		this.socket.on(
+			"send_message",
+			asyncHandler(async (req) => {
+				jwt.verify(
+					this.socket.user.accessToken,
+					process.env.ACCESS_TOKEN_SECRET,
+					async (err, decoded) => {
+						if (err) {
+							console.log(
+								"35: UserSockets.js ~ token error: ",
+								err
+							);
+							this.socket.emit("custom_error", err);
+						} else {
+							const message = await Message.create({
+								owner: this.socket.user._id,
+								room: req.roomId,
+								text: req.text,
 							});
+
+							const room = await Room.findById(req.roomId);
+							await room.messages.push(message._id);
+							await room.save();
+
+							const allRooms = await Room.find().populate({
+								path: "users owner messages",
+								select: "-accessToken -hashedPassword",
+								populate: {
+									path: "owner",
+									select: "-accessToken -hashedPassword",
+								},
+							});
+
+							const curRoom = await allRooms.find(
+								(room) => room._id == req.roomId
+							);
+
+							console.log('curRoom', curRoom)
+
+							this.server.server.emit("newMessageUpdates", {
+								allRooms,
+								curRoom,
+							});
+						}
 					}
-				}
-			);
-		});
+				);
+			})
+		);
 
 		this.socket.on(
 			"create_room",
@@ -134,8 +117,7 @@ class UserSocket {
 		);
 
 		this.socket.on("joinroom", async (payload) => {
-
-			console.log('payloadd', payload)
+			console.log("payloadd", payload);
 			const room = await Room.findById(payload.roomId);
 
 			await room.users.push(payload.userId);
