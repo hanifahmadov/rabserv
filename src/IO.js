@@ -166,7 +166,7 @@ class IO {
 
 					// ON DISCONNECT
 					socket.on(
-						"disconnection",
+						"disconnect",
 						asyncHandler(async () => {
 							console.log(
 								"170: IO.js ~ socket: disconnected user: " +
