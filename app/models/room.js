@@ -10,7 +10,6 @@ const roomSchema = new mongoose.Schema(
 			required: true,
 			unique: true,
 			trim: true,
-			lowercase: true,
 			index: {
 				unique: true,
 				collation: { locale: 'en', strength: 2 }
@@ -52,7 +51,6 @@ roomSchema.pre("save", function (next) {
 	// const uniqueUsers = [...new Set(this.users.map(String))];
 	// this.users = uniqueUsers;
 	// next();
-
 	this.users = [...new Set(this.users.map(id => id.toString()))];
 	next()
 });

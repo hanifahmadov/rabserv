@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema(
 
 		avatar: {
 			type: String,
-			default: "default_avatar.jpeg",
+			default: "default_avatar.png",
 		},
 
 		blocked: {
